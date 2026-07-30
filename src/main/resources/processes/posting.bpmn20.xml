@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd"
+             id="custody-definitions"
+             targetNamespace="http://www.flowable.org/processdef">
+
+    <!-- ========== 流程 1: 登账 (Posting) ==========
+         业务含义: 把交易流水记入总账
+         流程: 凭证录入 → 借贷平衡校验 → 完成
+         关键变量: amount(金额), accountNo(账户), tradeDate(交易日)
+    -->
+    <process id="posting" name="登账流程" isExecutable="true">
+
+        <startEvent id="startPosting" name="开始"/>
+        <sequenceFlow id="flow1" sourceRef="startPosting" targetRef="userTaskInputVoucher"/>
+
+        <userTask id="userTaskInputVoucher" name="凭证录入"
+                  flowable:assignee="${operator}">
+            <documentation>录入会计凭证 (借方/贷方金额、账户、摘要)</documentation>
+        </userTask>
+        <sequenceFlow id="flow2" sourceRef="userTaskInputVoucher" targetRef="serviceTaskValidateBalance"/>
+
+        <serviceTask id="serviceTaskValidateBalance" name="校验借贷平衡"
+                     flowable:class="com.demo.custody.delegate.BalanceValidateDelegate"/>
+        <sequenceFlow id="flow3" sourceRef="serviceTaskValidateBalance" targetRef="endPosting"/>
+
+        <endEvent id="endPosting" name="登账完成"/>
+    </process>
+
+</definitions>

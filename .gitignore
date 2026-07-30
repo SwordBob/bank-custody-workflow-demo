@@ -1,0 +1,30 @@
+# ===== Maven 编译产物 =====
+target/
+*.class
+*.jar
+!target/*.jar
+
+# ===== IDE =====
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# ===== macOS =====
+.DS_Store
+
+# ===== Spring Boot devtools =====
+spring-boot-devtools.properties
+
+# ===== 日志 =====
+*.log
+logs/
+
+# ===== 临时文件 =====
+*.tmp
+*.bak
+*.swp
