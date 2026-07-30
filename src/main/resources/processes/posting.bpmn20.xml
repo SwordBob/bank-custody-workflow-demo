@@ -26,7 +26,7 @@
         <sequenceFlow id="flow2" sourceRef="userTaskInputVoucher" targetRef="serviceTaskValidateBalance"/>
 
         <serviceTask id="serviceTaskValidateBalance" name="校验借贷平衡"
-                     flowable:class="com.demo.custody.delegate.BalanceValidateDelegate"/>
+                     flowable:delegateExpression="${balanceValidateDelegate}"/>
         <sequenceFlow id="flow3" sourceRef="serviceTaskValidateBalance" targetRef="endPosting"/>
 
         <endEvent id="endPosting" name="登账完成"/>

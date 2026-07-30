@@ -20,7 +20,7 @@
         <sequenceFlow id="flow1" sourceRef="startClearing" targetRef="serviceTaskFetchPending"/>
 
         <serviceTask id="serviceTaskFetchPending" name="拉取待清算数据"
-                     flowable:class="com.demo.custody.delegate.FetchPendingDelegate"/>
+                     flowable:delegateExpression="${fetchPendingDelegate}"/>
         <sequenceFlow id="flow2" sourceRef="serviceTaskFetchPending" targetRef="userTaskConfirmClearing"/>
 
         <userTask id="userTaskConfirmClearing" name="清算确认"
@@ -30,7 +30,7 @@
         <sequenceFlow id="flow3" sourceRef="userTaskConfirmClearing" targetRef="serviceTaskWriteClearing"/>
 
         <serviceTask id="serviceTaskWriteClearing" name="写入清算结果"
-                     flowable:class="com.demo.custody.delegate.WriteClearingDelegate"/>
+                     flowable:delegateExpression="${writeClearingDelegate}"/>
         <sequenceFlow id="flow4" sourceRef="serviceTaskWriteClearing" targetRef="endClearing"/>
 
         <endEvent id="endClearing" name="清算完成"/>

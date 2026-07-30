@@ -3,6 +3,7 @@ package com.demo.custody;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 银行资产托管 4 流程工作流 Demo
@@ -18,6 +19,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 @MapperScan("com.demo.custody.mapper")
+@EnableScheduling   // 开启 @Scheduled 定时任务 (每日对账)
 public class BankCustodyApplication {
 
     public static void main(String[] args) {

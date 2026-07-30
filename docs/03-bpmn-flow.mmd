@@ -1,0 +1,42 @@
+graph LR
+    subgraph "登账 (Posting)"
+        P1[Start] --> P2[凭证录入<br/>UserTask]
+        P2 --> P3[借贷平衡校验<br/>ServiceTask]
+        P3 --> P4[End]
+    end
+
+    subgraph "清算 (Clearing)"
+        C1[Start] --> C2[拉取待清算<br/>ServiceTask]
+        C2 --> C3[清算确认<br/>UserTask]
+        C3 --> C4[写入清算结果<br/>ServiceTask]
+        C4 --> C5[End]
+    end
+
+    subgraph "对账 (Reconciliation)"
+        R1[Start] --> R2[拉取两方数据<br/>ServiceTask]
+        R2 --> R3[自动比对<br/>ServiceTask]
+        R3 --> R4{差异>0?}
+        R4 -->|是| R5[调账处理<br/>UserTask]
+        R4 -->|否| R7[写入对账结果<br/>ServiceTask]
+        R5 --> R7
+        R7 --> R6[End]
+    end
+
+    subgraph "估值 (Valuation)"
+        V1[Start] --> V2[拉取持仓<br/>ServiceTask]
+        V2 --> V3[计算 NAV<br/>ServiceTask]
+        V3 --> V4[估值确认<br/>UserTask]
+        V4 --> V5[写入估值表<br/>ServiceTask]
+        V5 --> V6[End]
+    end
+
+    P4 -.业务约束.-> C1
+    C5 -.业务约束.-> R1
+    R6 -.业务约束.-> V1
+
+    style P2 fill:#67c23a,color:#fff
+    style P3 fill:#1890ff,color:#fff
+    style R4 fill:#e6a23c,color:#fff
+    style R5 fill:#67c23a,color:#fff
+    style V4 fill:#67c23a,color:#fff
+    style V3 fill:#1890ff,color:#fff

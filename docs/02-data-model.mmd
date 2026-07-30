@@ -1,0 +1,50 @@
+erDiagram
+    VOUCHER {
+        bigint id PK
+        varchar business_key UK
+        decimal amount
+        varchar account_no
+        date trade_date
+        varchar operator
+        varchar status
+    }
+    CLEARING_BATCH {
+        bigint id PK
+        varchar batch_no UK
+        int trade_count
+        decimal total_amount
+        varchar status
+    }
+    RECONCILIATION_LOG {
+        bigint id PK
+        varchar business_key UK
+        int diff_count
+        decimal diff_amount
+        varchar status
+        varchar operator
+    }
+    HOLDING {
+        bigint id PK
+        varchar fund_code
+        varchar security_code
+        decimal quantity
+        decimal market_price
+        decimal market_value
+    }
+    FUND_VALUATION {
+        bigint id PK
+        varchar business_key UK
+        varchar fund_code
+        decimal total_asset
+        bigint share_count
+        decimal nav
+        date nav_date
+        varchar status
+    }
+    ACT_HI_PROCINST ||--o{ ACT_HI_TASKINST : "processInstanceId"
+    ACT_HI_PROCINST ||--o{ ACT_HI_VARINST : "processInstanceId"
+
+    VOUCHER }o..|| ACT_HI_PROCINST : "businessKey"
+    RECONCILIATION_LOG }o..|| ACT_HI_PROCINST : "businessKey"
+    FUND_VALUATION }o..|| ACT_HI_PROCINST : "businessKey"
+    HOLDING ||--o{ FUND_VALUATION : "fundCode"

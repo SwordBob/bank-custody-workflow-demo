@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant User as 业务方
+    participant Browser as 任务看板<br/>(HTML)
+    participant API as WorkflowController
+    participant Flowable as Flowable 引擎
+    participant DB as MySQL
+
+    User->>Browser: 打开 http://localhost:8080/task-board.html
+    Browser->>API: GET /api/custody/tasks?assignee=张三
+    API->>Flowable: taskService.createTaskQuery()
+    Flowable-->>API: List<Task>
+    API-->>Browser: 任务列表 JSON
+
+    User->>Browser: 点击 "完成"
+    Browser->>API: POST /api/custody/tasks/{id}/complete
+    API->>Flowable: taskService.complete(id)
+    Flowable->>Flowable: 触发 ServiceTask (JavaDelegate)
+    Flowable->>DB: 写业务表 (voucher/clearing/reconciliation/fund_valuation)
+    DB-->>Flowable: OK
+    Flowable-->>API: 任务完成
+    API-->>Browser: { status: COMPLETED }
+
+    Browser->>API: GET /api/custody/daily-reconcile/stats
+    API->>DB: SELECT COUNT(*) FROM reconciliation_log
+    DB-->>API: 统计结果
+    API-->>Browser: { total: 5, autoPassed: 4, adjusted: 1 }

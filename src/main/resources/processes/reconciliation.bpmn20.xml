@@ -22,11 +22,11 @@
         <sequenceFlow id="flow1" sourceRef="startReconciliation" targetRef="serviceTaskFetchBoth"/>
 
         <serviceTask id="serviceTaskFetchBoth" name="拉取两方对账数据"
-                     flowable:class="com.demo.custody.delegate.FetchBothDelegate"/>
+                     flowable:delegateExpression="${fetchBothDelegate}"/>
         <sequenceFlow id="flow2" sourceRef="serviceTaskFetchBoth" targetRef="serviceTaskAutoMatch"/>
 
         <serviceTask id="serviceTaskAutoMatch" name="自动比对"
-                     flowable:class="com.demo.custody.delegate.AutoMatchDelegate"/>
+                     flowable:delegateExpression="${autoMatchDelegate}"/>
         <sequenceFlow id="flow3" sourceRef="serviceTaskAutoMatch" targetRef="exclusiveGatewayDiff"/>
 
         <!-- 关键判断: 差异>0 走调账, 否则直接通过 -->
@@ -45,7 +45,7 @@
         <sequenceFlow id="flow5" sourceRef="userTaskAdjust" targetRef="serviceTaskWriteReconciliation"/>
 
         <serviceTask id="serviceTaskWriteReconciliation" name="写入对账结果"
-                     flowable:class="com.demo.custody.delegate.WriteReconciliationDelegate"/>
+                     flowable:delegateExpression="${writeReconciliationDelegate}"/>
         <sequenceFlow id="flow6" sourceRef="serviceTaskWriteReconciliation" targetRef="endReconciliation"/>
 
         <endEvent id="endReconciliation" name="对账完成"/>

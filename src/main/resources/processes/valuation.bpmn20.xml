@@ -21,11 +21,11 @@
         <sequenceFlow id="flow1" sourceRef="startValuation" targetRef="serviceTaskFetchHoldings"/>
 
         <serviceTask id="serviceTaskFetchHoldings" name="拉取持仓数据"
-                     flowable:class="com.demo.custody.delegate.FetchHoldingsDelegate"/>
+                     flowable:delegateExpression="${fetchHoldingsDelegate}"/>
         <sequenceFlow id="flow2" sourceRef="serviceTaskFetchHoldings" targetRef="serviceTaskCalculateNav"/>
 
         <serviceTask id="serviceTaskCalculateNav" name="计算净值 NAV"
-                     flowable:class="com.demo.custody.delegate.CalculateNavDelegate"/>
+                     flowable:delegateExpression="${calculateNavDelegate}"/>
         <sequenceFlow id="flow3" sourceRef="serviceTaskCalculateNav" targetRef="userTaskConfirmValuation"/>
 
         <userTask id="userTaskConfirmValuation" name="估值确认"
@@ -35,7 +35,7 @@
         <sequenceFlow id="flow4" sourceRef="userTaskConfirmValuation" targetRef="serviceTaskWriteValuation"/>
 
         <serviceTask id="serviceTaskWriteValuation" name="写入估值表"
-                     flowable:class="com.demo.custody.delegate.WriteValuationDelegate"/>
+                     flowable:delegateExpression="${writeValuationDelegate}"/>
         <sequenceFlow id="flow5" sourceRef="serviceTaskWriteValuation" targetRef="endValuation"/>
 
         <endEvent id="endValuation" name="估值完成"/>

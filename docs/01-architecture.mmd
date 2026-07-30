@@ -1,0 +1,33 @@
+graph TB
+    subgraph "Client"
+        UI[HTML 任务看板<br/>task-board.html]
+        CLI[curl / Postman]
+    end
+
+    subgraph "Spring Boot 3.2.5 应用"
+        Controller[WorkflowController<br/>+ TaskController]
+        Flowable[Flowable 7<br/>BPMN Engine]
+        MyBatisPlus[MyBatis-Plus<br/>5 Mapper + 5 Service]
+    end
+
+    subgraph "Storage"
+        MySQL[(MySQL 9.7<br/>5 业务表 +<br/>23 ACT_* 表)]
+        Redis[(Redis<br/>缓存/限流)]
+    end
+
+    subgraph "Schedulers"
+        Quartz[Quartz @Scheduled<br/>每日 23:30 对账]
+    end
+
+    UI -->|fetch| Controller
+    CLI -->|REST| Controller
+    Controller -->|启动/查询| Flowable
+    Flowable -->|执行 Delegate| MyBatisPlus
+    MyBatisPlus -->|CRUD| MySQL
+    Flowable -->|缓存| Redis
+    Quartz -->|触发| Flowable
+    Flowable -.->|BPMN 2.0| Flowable
+
+    style Flowable fill:#1f497d,color:#fff
+    style MySQL fill:#e6a23c,color:#fff
+    style Quartz fill:#67c23a,color:#fff
