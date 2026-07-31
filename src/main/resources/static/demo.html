@@ -326,6 +326,14 @@
   const API = '/api/custody';
   const $ = id => document.getElementById(id);
 
+  // tab key 到 DOM id 前缀的映射 (tab 是流程名, 但元素 id 用了短前缀)
+  const TAB_PREFIX = {
+    posting: 'post',
+    clearing: 'clear',
+    reconciliation: 'rec',
+    valuation: 'val'
+  };
+
   // ============ Tab 切换 ============
   document.querySelectorAll('.tab').forEach(t => {
     t.onclick = () => {
@@ -457,7 +465,7 @@
     };
     try {
       await api('POST', '/tasks/' + taskId + '/complete', { operator: operatorMap[tab] });
-      const statusId = tab + '-status';
+      const statusId = TAB_PREFIX[tab] + '-status';
       const cur = $(statusId).textContent;
       setStatus(statusId, cur + `\n✅ 已完成 UserTask: "${name}"`, 'ok');
       await refreshTasks(tab);
@@ -479,7 +487,7 @@
       reconciliation: $('rec-operator').value,
       valuation: $('val-operator').value
     };
-    const container = $(tab + '-tasks');
+    const container = $(TAB_PREFIX[tab] + '-tasks');
     try {
       const tasks = await api('GET', '/tasks?assignee=' + encodeURIComponent(operatorMap[tab]));
       const filtered = tasks.filter(t => t.processDefinitionKey === tab);
@@ -554,7 +562,7 @@
       valuation: () => $('val-operator').value
     };
 
-    setStatus(tab + '-status', '🎬 一键演示中...', 'running');
+    setStatus(TAB_PREFIX[tab] + '-status', '🎬 一键演示中...', 'running');
     await startMap[tab]();
     await new Promise(r => setTimeout(r, 600));
 
@@ -569,8 +577,8 @@
         await new Promise(r => setTimeout(r, 400));
       }
     }
-    setStatus(tab + '-status',
-      $(tab + '-status').textContent + '\n\n🎉 一键演示完成！',
+    setStatus(TAB_PREFIX[tab] + '-status',
+      $(TAB_PREFIX[tab] + '-status').textContent + '\n\n🎉 一键演示完成！',
       'ok'
     );
   }
