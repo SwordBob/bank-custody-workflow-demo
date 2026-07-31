@@ -128,6 +128,9 @@ curl -X POST "http://localhost:8080/api/custody/processes/reconciliation/start?b
 
 # 看 HTML 任务看板
 open http://localhost:8080/task-board.html
+
+# 看 4 流程综合演示页 (推荐, 5 分钟走完登账/清算/对账/估值)
+open http://localhost:8080/demo.html
 ```
 
 ## 完整 REST API 列表
@@ -219,7 +222,9 @@ bank-custody-workflow-demo/
         │   ├── clearing.bpmn20.xml
         │   ├── reconciliation.bpmn20.xml
         │   └── valuation.bpmn20.xml
-        └── static/task-board.html                  # 任务看板
+        └── static/
+            ├── task-board.html                       # 任务看板 (按 assignee 查/完成)
+            └── demo.html                             # 4 流程综合演示页 (一键跑通)
 ```
 
 ## 状态

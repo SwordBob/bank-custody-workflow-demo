@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>银行资产托管 · 4 流程演示</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "Microsoft YaHei", sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      padding: 20px;
+    }
+    h1 { color: #1f497d; margin-bottom: 6px; text-align: center; font-size: 22px; }
+    .subtitle { text-align: center; color: #888; font-size: 13px; margin-bottom: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      color: #666;
+      transition: all 0.15s;
+    }
+    .tab:hover { background: #f0f4fa; }
+    .tab.active {
+      background: #1f497d;
+      color: white;
+      border-color: #1f497d;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      display: none;
+    }
+    .panel.active { display: block; }
+
+    /* Form */
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .form-field { display: flex; flex-direction: column; gap: 4px; }
+    .form-field label { font-size: 12px; color: #666; }
+    .form-field input, .form-field select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .form-field input:focus, .form-field select:focus {
+      outline: none;
+      border-color: #1f497d;
+    }
+
+    .btn {
+      padding: 9px 20px;
+      background: #1f497d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    .btn:hover { background: #2c5aa0; }
+    .btn.success { background: #67c23a; }
+    .btn.success:hover { background: #85ce61; }
+    .btn.warn { background: #e6a23c; }
+    .btn.warn:hover { background: #ebb563; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Status box */
+    .status-box {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #f5f7fa;
+      border-left: 4px solid #1f497d;
+      border-radius: 4px;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 40px;
+    }
+    .status-box.ok { border-color: #67c23a; background: #f0f9eb; }
+    .status-box.err { border-color: #f56c6c; background: #fef0f0; color: #c00; }
+    .status-box.running { border-color: #e6a23c; background: #fdf6ec; }
+
+    /* Task list */
+    .section-title {
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #1f497d;
+    }
+    .task-list { display: flex; flex-direction: column; gap: 8px; }
+    .task-card {
+      padding: 12px 16px;
+      background: #fafbfc;
+      border: 1px solid #e8eaec;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .task-card .meta { color: #888; font-size: 12px; }
+    .empty { color: #999; font-size: 13px; padding: 12px; text-align: center; }
+
+    /* Data table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .data-table th, .data-table td {
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .data-table th { background: #f5f7fa; color: #666; font-weight: 600; }
+    .data-table tr:hover td { background: #fafbfc; }
+
+    /* Flow diagram hint */
+    .flow-hint {
+      margin-top: 8px;
+      padding: 10px 14px;
+      background: #f0f4fa;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #555;
+      font-family: monospace;
+    }
+    .flow-hint b { color: #1f497d; }
+  </style>
+</head>
+<body>
+  <h1>🏦 银行资产托管 · 4 流程演示</h1>
+  <div class="subtitle">Flowable 7 + MySQL 9 · 真实业务流程驱动 · 一键演示</div>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-tab="posting">📝 1. 登账</div>
+      <div class="tab" data-tab="clearing">💰 2. 清算</div>
+      <div class="tab" data-tab="reconciliation">⚖️ 3. 对账</div>
+      <div class="tab" data-tab="valuation">📊 4. 估值</div>
+    </div>
+
+    <!-- ============ Tab 1: 登账 ============ -->
+    <div class="panel active" id="panel-posting">
+      <div class="flow-hint">
+        <b>流程图：</b> 凭证录入(UserTask) → 借贷平衡校验(ServiceTask) → 结束
+        <br>👤 <b>必经人工：</b>"凭证录入" — 操作员录入借贷方金额
+      </div>
+
+      <div class="form-row" style="margin-top: 16px;">
+        <div class="form-field">
+          <label>业务流水号 (businessKey)</label>
+          <input id="post-bk" value="VCH-DEMO-001" />
+        </div>
+        <div class="form-field">
+          <label>借方金额 (amount)</label>
+          <input id="post-amount" value="10000.00" />
+        </div>
+        <div class="form-field">
+          <label>账户号 (accountNo)</label>
+          <input id="post-account" value="6228001234567890" />
+        </div>
+        <div class="form-field">
+          <label>操作员 (operator)</label>
+          <input id="post-operator" value="张三" />
+        </div>
+      </div>
+      <div>
+        <button class="btn" onclick="startPosting()">▶ 启动登账流程</button>
+        <button class="btn success" onclick="demoRun('posting')">🎬 一键演示(自动完成所有 task)</button>
+      </div>
+
+      <div class="status-box" id="post-status">等待操作...</div>
+
+      <div class="section-title">当前待办 (UserTask)</div>
+      <div id="post-tasks" class="task-list"><div class="empty">暂无待办</div></div>
+
+      <div class="section-title">📋 业务表 voucher (最新 5 条)</div>
+      <div id="post-vouchers"></div>
+    </div>
+
+    <!-- ============ Tab 2: 清算 ============ -->
+    <div class="panel" id="panel-clearing">
+      <div class="flow-hint">
+        <b>流程图：</b> 拉取待清算(ServiceTask) → <b>清算确认(UserTask)</b> → 写入清算结果(ServiceTask) → 结束
+        <br>👤 <b>必经人工：</b>"清算确认" — 操作员确认清算批次
+      </div>
+
+      <div class="form-row" style="margin-top: 16px;">
+        <div class="form-field">
+          <label>批次号 (batchNo)</label>
+          <input id="clear-bk" value="BATCH-DEMO-001" />
+        </div>
+        <div class="form-field">
+          <label>交易笔数 (tradeCount)</label>
+          <input id="clear-count" value="50" />
+        </div>
+        <div class="form-field">
+          <label>总金额 (totalAmount)</label>
+          <input id="clear-amount" value="500000.00" />
+        </div>
+        <div class="form-field">
+          <label>操作员 (operator)</label>
+          <input id="clear-operator" value="李四" />
+        </div>
+      </div>
+      <div>
+        <button class="btn" onclick="startClearing()">▶ 启动清算流程</button>
+        <button class="btn success" onclick="demoRun('clearing')">🎬 一键演示</button>
+      </div>
+
+      <div class="status-box" id="clear-status">等待操作...</div>
+
+      <div class="section-title">当前待办 (UserTask)</div>
+      <div id="clear-tasks" class="task-list"><div class="empty">暂无待办</div></div>
+
+      <div class="section-title">📋 业务表 clearing_batch (最新 5 条)</div>
+      <div id="clear-batches"></div>
+    </div>
+
+    <!-- ============ Tab 3: 对账 ============ -->
+    <div class="panel" id="panel-reconciliation">
+      <div class="flow-hint">
+        <b>流程图：</b> 拉取两方数据(ServiceTask) → 自动比对(ServiceTask) →
+        <b>差异>0?(ExclusiveGateway)</b> → ①是: 调账(UserTask) → ②否: 写入对账结果(ServiceTask) → 结束
+        <br>🤖 <b>无差异走全自动</b>，有差异才需人调账
+      </div>
+
+      <div class="form-row" style="margin-top: 16px;">
+        <div class="form-field">
+          <label>对账单号 (businessKey)</label>
+          <input id="rec-bk" value="RECON-DEMO-001" />
+        </div>
+        <div class="form-field">
+          <label>场景</label>
+          <select id="rec-mode">
+            <option value="auto">✅ 无差异 (走自动分支)</option>
+            <option value="diff">⚠️ 有差异 (走人工调账)</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>差异条数 (diffCount, 有差异时填)</label>
+          <input id="rec-diff" value="3" />
+        </div>
+        <div class="form-field">
+          <label>操作员 (operator)</label>
+          <input id="rec-operator" value="王五" />
+        </div>
+      </div>
+      <div>
+        <button class="btn" onclick="startReconciliation()">▶ 启动对账流程</button>
+        <button class="btn success" onclick="demoRun('reconciliation')">🎬 一键演示</button>
+      </div>
+
+      <div class="status-box" id="rec-status">等待操作...</div>
+
+      <div class="section-title">当前待办 (UserTask, 仅"有差异"模式会有)</div>
+      <div id="rec-tasks" class="task-list"><div class="empty">暂无待办</div></div>
+
+      <div class="section-title">📋 业务表 reconciliation_log (最新 5 条)</div>
+      <div id="rec-logs"></div>
+    </div>
+
+    <!-- ============ Tab 4: 估值 ============ -->
+    <div class="panel" id="panel-valuation">
+      <div class="flow-hint">
+        <b>流程图：</b> 拉取持仓(ServiceTask) → 计算 NAV(ServiceTask) →
+        <b>估值确认(UserTask)</b> → 写入估值表(ServiceTask) → 结束
+        <br>📐 <b>NAV 公式：</b>总资产 / 5000万份额 · 当前持仓 3 条 (FUND001 · 2,252,100 元)
+      </div>
+
+      <div class="form-row" style="margin-top: 16px;">
+        <div class="form-field">
+          <label>基金代码 (fundCode)</label>
+          <input id="val-bk" value="FUND001" />
+        </div>
+        <div class="form-field">
+          <label>估值日期</label>
+          <input id="val-date" type="date" value="2026-07-31" />
+        </div>
+        <div class="form-field">
+          <label>操作员 (operator)</label>
+          <input id="val-operator" value="赵六" />
+        </div>
+      </div>
+      <div>
+        <button class="btn" onclick="startValuation()">▶ 启动估值流程</button>
+        <button class="btn success" onclick="demoRun('valuation')">🎬 一键演示</button>
+      </div>
+
+      <div class="status-box" id="val-status">等待操作...</div>
+
+      <div class="section-title">当前待办 (UserTask)</div>
+      <div id="val-tasks" class="task-list"><div class="empty">暂无待办</div></div>
+
+      <div class="section-title">📋 业务表 fund_valuation (最新 5 条)</div>
+      <div id="val-valuations"></div>
+    </div>
+  </div>
+
+<script>
+  const API = '/api/custody';
+  const $ = id => document.getElementById(id);
+
+  // ============ Tab 切换 ============
+  document.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      $('panel-' + t.dataset.tab).classList.add('active');
+      refreshAll();
+    };
+  });
+
+  function setStatus(id, msg, type) {
+    const el = $(id);
+    el.textContent = msg;
+    el.className = 'status-box' + (type ? ' ' + type : '');
+  }
+
+  async function api(method, path, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(API + path, opts);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+
+  // ============ 启动流程 ============
+  async function startPosting() {
+    setStatus('post-status', '⏳ 启动中...', 'running');
+    try {
+      const data = await api('POST',
+        '/processes/posting/start?businessKey=' + encodeURIComponent($('post-bk').value),
+        {
+          operator: $('post-operator').value,
+          amount: parseFloat($('post-amount').value),
+          accountNo: $('post-account').value,
+          tradeDate: new Date().toISOString().slice(0, 10)
+        }
+      );
+      setStatus('post-status',
+        `✅ 登账流程已启动\nprocessInstanceId: ${data.processInstanceId}\nbusinessKey: ${data.businessKey}\n状态: ${data.status}\n\n👤 下一步：完成 "凭证录入" UserTask`,
+        'ok'
+      );
+      await refreshTasks('posting');
+      await loadVouchers();
+    } catch (e) {
+      setStatus('post-status', '❌ 启动失败：' + e.message, 'err');
+    }
+  }
+
+  async function startClearing() {
+    setStatus('clear-status', '⏳ 启动中...', 'running');
+    try {
+      const data = await api('POST',
+        '/processes/clearing/start?businessKey=' + encodeURIComponent($('clear-bk').value),
+        {
+          operator: $('clear-operator').value,
+          tradeCount: parseInt($('clear-count').value),
+          totalAmount: parseFloat($('clear-amount').value)
+        }
+      );
+      setStatus('clear-status',
+        `✅ 清算流程已启动\nprocessInstanceId: ${data.processInstanceId}\n\n🤖 拉取待清算已自动执行\n👤 下一步：完成 "清算确认" UserTask`,
+        'ok'
+      );
+      await refreshTasks('clearing');
+      await loadClearingBatches();
+    } catch (e) {
+      setStatus('clear-status', '❌ 启动失败：' + e.message, 'err');
+    }
+  }
+
+  async function startReconciliation() {
+    setStatus('rec-status', '⏳ 启动中...', 'running');
+    const mode = $('rec-mode').value;
+    const variables = { operator: $('rec-operator').value };
+    if (mode === 'diff') {
+      // 模拟有差异：传 diffCount>0 触发调账分支
+      variables.diffCount = parseInt($('rec-diff').value);
+      variables.diffAmount = 1234.56;
+    }
+    try {
+      const data = await api('POST',
+        '/processes/reconciliation/start?businessKey=' + encodeURIComponent($('rec-bk').value),
+        variables
+      );
+      const note = mode === 'auto'
+        ? '🤖 差异=0 走自动分支, 无需人工'
+        : '⚠️ 差异>0 走人工调账分支, 需完成调账 UserTask';
+      setStatus('rec-status',
+        `✅ 对账流程已启动\nprocessInstanceId: ${data.processInstanceId}\n模式: ${mode === 'auto' ? '无差异(自动)' : '有差异(人工)'}\n\n${note}`,
+        'ok'
+      );
+      await refreshTasks('reconciliation');
+      await loadReconciliations();
+    } catch (e) {
+      setStatus('rec-status', '❌ 启动失败：' + e.message, 'err');
+    }
+  }
+
+  async function startValuation() {
+    setStatus('val-status', '⏳ 启动中...', 'running');
+    try {
+      const data = await api('POST',
+        '/processes/valuation/start?businessKey=' + encodeURIComponent($('val-bk').value + '-' + Date.now()),
+        {
+          operator: $('val-operator').value,
+          fundCode: $('val-bk').value,
+          navDate: $('val-date').value
+        }
+      );
+      setStatus('val-status',
+        `✅ 估值流程已启动\nprocessInstanceId: ${data.processInstanceId}\n\n🤖 拉取持仓 + 计算 NAV 已自动执行\n📐 NAV = 2,252,100 / 50,000,000 = 0.0450\n👤 下一步：完成 "估值确认" UserTask`,
+        'ok'
+      );
+      await refreshTasks('valuation');
+      await loadValuations();
+    } catch (e) {
+      setStatus('val-status', '❌ 启动失败：' + e.message, 'err');
+    }
+  }
+
+  // ============ 完成任务 ============
+  async function completeTask(tab, taskId, name) {
+    const operatorMap = {
+      posting: $('post-operator').value,
+      clearing: $('clear-operator').value,
+      reconciliation: $('rec-operator').value,
+      valuation: $('val-operator').value
+    };
+    try {
+      await api('POST', '/tasks/' + taskId + '/complete', { operator: operatorMap[tab] });
+      const statusId = tab + '-status';
+      const cur = $(statusId).textContent;
+      setStatus(statusId, cur + `\n✅ 已完成 UserTask: "${name}"`, 'ok');
+      await refreshTasks(tab);
+      // 刷新对应业务表
+      if (tab === 'posting') await loadVouchers();
+      if (tab === 'clearing') await loadClearingBatches();
+      if (tab === 'reconciliation') await loadReconciliations();
+      if (tab === 'valuation') await loadValuations();
+    } catch (e) {
+      alert('完成失败：' + e.message);
+    }
+  }
+
+  // ============ 刷新待办 ============
+  async function refreshTasks(tab) {
+    const operatorMap = {
+      posting: $('post-operator').value,
+      clearing: $('clear-operator').value,
+      reconciliation: $('rec-operator').value,
+      valuation: $('val-operator').value
+    };
+    const container = $(tab + '-tasks');
+    try {
+      const tasks = await api('GET', '/tasks?assignee=' + encodeURIComponent(operatorMap[tab]));
+      const filtered = tasks.filter(t => t.processDefinitionKey === tab);
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty">✅ 暂无待办 (本流程已跑完或本操作员无任务)</div>';
+        return;
+      }
+      container.innerHTML = filtered.map(t => `
+        <div class="task-card">
+          <div>
+            <b>📌 ${t.name}</b>
+            <div class="meta">taskId: ${t.taskId.slice(0, 8)}... · 流程: ${t.processDefinitionKey} · 分配给: ${t.assignee}</div>
+          </div>
+          <button class="btn success" onclick="completeTask('${tab}', '${t.taskId}', '${t.name}')">
+            ✅ 我来完成
+          </button>
+        </div>
+      `).join('');
+    } catch (e) {
+      container.innerHTML = '<div class="empty">加载失败：' + e.message + '</div>';
+    }
+  }
+
+  // ============ 加载业务表 ============
+  async function loadVouchers() {
+    try {
+      const rows = await api('GET', '/business/vouchers');
+      renderTable($('post-vouchers'), ['id', 'businessKey', 'amount', 'accountNo', 'status', 'tradeDate'], rows.slice(-5).reverse());
+    } catch (e) { $('post-vouchers').innerHTML = '<div class="empty">加载失败</div>'; }
+  }
+  async function loadClearingBatches() {
+    try {
+      const rows = await api('GET', '/business/clearing-batches');
+      renderTable($('clear-batches'), ['id', 'batchNo', 'tradeCount', 'totalAmount', 'status', 'operator'], rows.slice(-5).reverse());
+    } catch (e) { $('clear-batches').innerHTML = '<div class="empty">加载失败</div>'; }
+  }
+  async function loadReconciliations() {
+    try {
+      const rows = await api('GET', '/business/reconciliations');
+      renderTable($('rec-logs'), ['id', 'businessKey', 'diffCount', 'diffAmount', 'status', 'note'], rows.slice(-5).reverse());
+    } catch (e) { $('rec-logs').innerHTML = '<div class="empty">加载失败</div>'; }
+  }
+  async function loadValuations() {
+    try {
+      const rows = await api('GET', '/business/valuations');
+      renderTable($('val-valuations'), ['id', 'fundCode', 'totalAsset', 'shareCount', 'nav', 'status'], rows.slice(-5).reverse());
+    } catch (e) { $('val-valuations').innerHTML = '<div class="empty">加载失败</div>'; }
+  }
+
+  function renderTable(container, cols, rows) {
+    if (rows.length === 0) { container.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+    container.innerHTML = `
+      <table class="data-table">
+        <thead><tr>${cols.map(c => '<th>' + c + '</th>').join('')}</tr></thead>
+        <tbody>${rows.map(r => '<tr>' + cols.map(c => '<td>' + (r[c] ?? '') + '</td>').join('') + '</tr>').join('')}</tbody>
+      </table>
+    `;
+  }
+
+  // ============ 一键演示：自动启动 + 循环完成所有 task ============
+  async function demoRun(tab) {
+    const startMap = {
+      posting: startPosting,
+      clearing: startClearing,
+      reconciliation: startReconciliation,
+      valuation: startValuation
+    };
+    const operatorMap = {
+      posting: () => $('post-operator').value,
+      clearing: () => $('clear-operator').value,
+      reconciliation: () => $('rec-operator').value,
+      valuation: () => $('val-operator').value
+    };
+
+    setStatus(tab + '-status', '🎬 一键演示中...', 'running');
+    await startMap[tab]();
+    await new Promise(r => setTimeout(r, 600));
+
+    // 循环完成 task, 直到没有为止 (最多 5 轮, 防死循环)
+    for (let i = 0; i < 5; i++) {
+      const operator = operatorMap[tab]();
+      const tasks = await api('GET', '/tasks?assignee=' + encodeURIComponent(operator));
+      const mine = tasks.filter(t => t.processDefinitionKey === tab);
+      if (mine.length === 0) break;
+      for (const t of mine) {
+        await completeTask(tab, t.taskId, t.name);
+        await new Promise(r => setTimeout(r, 400));
+      }
+    }
+    setStatus(tab + '-status',
+      $(tab + '-status').textContent + '\n\n🎉 一键演示完成！',
+      'ok'
+    );
+  }
+
+  // ============ 启动时拉所有业务表 ============
+  async function refreshAll() {
+    await Promise.all([loadVouchers(), loadClearingBatches(), loadReconciliations(), loadValuations()]);
+    // 也拉一下当前 Tab 的待办
+    const activeTab = document.querySelector('.tab.active').dataset.tab;
+    const operatorMap = {
+      posting: $('post-operator').value,
+      clearing: $('clear-operator').value,
+      reconciliation: $('rec-operator').value,
+      valuation: $('val-operator').value
+    };
+    refreshTasks(activeTab);
+  }
+
+  refreshAll();
+</script>
+</body>
+</html>
