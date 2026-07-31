@@ -23,6 +23,14 @@ public class FetchPendingDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution execution) {
         String batchNo = (String) execution.getVariable("batchNo");
+        // 兜底: 如果启动时没传 batchNo, 用 businessKey 顶上 (清算是按批次号组织的)
+        if (batchNo == null || batchNo.isBlank()) {
+            batchNo = execution.getProcessInstanceBusinessKey();
+            if (batchNo == null || batchNo.isBlank()) {
+                batchNo = "BATCH-" + execution.getProcessInstanceId().substring(0, 8);
+            }
+            execution.setVariable("batchNo", batchNo);
+        }
         String operator = (String) execution.getVariable("operator");
 
         log.info("📥 [清算] 拉取待清算: batchNo={}", batchNo);
