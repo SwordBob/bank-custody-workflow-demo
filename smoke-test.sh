@@ -6,9 +6,11 @@
 # + 业务表 + Quartz + HTML 看板都能正常响应
 #
 # 用法:
-#   ./smoke-test.sh                          # 默认 http://localhost:8080
+#   ./smoke-test.sh                          # 默认 http://localhost:8080 (5-10s 快速冒烟)
 #   ./smoke-test.sh http://localhost:9090    # 自定义
 #   VERBOSE=true ./smoke-test.sh             # 显示响应体
+#   WITH_BROWSER=true ./smoke-test.sh        # 跑 API + Playwright 浏览器真点 demo.html 4 Tab (~50s)
+#                                            # 需要 npm 装 playwright (npm i -g playwright)
 #
 # 退出码:
 #   0 = 全部通过
@@ -20,6 +22,7 @@ set -e
 
 BASE_URL="${1:-http://localhost:8080}"
 VERBOSE="${VERBOSE:-false}"
+WITH_BROWSER="${WITH_BROWSER:-false}"
 TIMEOUT=10
 MAX_WAIT=60
 PASS=0
@@ -165,6 +168,40 @@ echo -e "${BOLD}── 任务看板 & Quartz ──${NC}"
 test_endpoint "TASK" "任务列表" "GET" "/api/custody/tasks" "200"
 test_endpoint "QUARTZ" "触发每日对账" "POST" "/api/custody/daily-reconcile/trigger" "200"
 test_endpoint "QUARTZ" "今日对账统计" "GET" "/api/custody/daily-reconcile/stats" "200"
+
+# ==================== demo.html 浏览器真点 (条件触发) ====================
+# OpenClaw review 方案 C: 5-10s 冒烟语义, 40s 浏览器测试拆出来, 显式 WITH_BROWSER=true 才跑
+# 需要 playwright: npm i -g playwright + 浏览器已下载
+# 脚本路径约定: /tmp/click-demo.cjs (Mavis 已实现 4 Tab 切 + 抓 page error + 截图)
+if [ "$WITH_BROWSER" = "true" ]; then
+  echo ""
+  echo -e "${BOLD}── demo.html 浏览器真点 (4 Tab 一键演示 + 抓 page error) ──${NC}"
+  # 优先用仓内 e2e/click-demo.cjs, fallback /tmp (Mavis 老脚本位置)
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  E2E_SCRIPT=""
+  [ -f "$SCRIPT_DIR/e2e/click-demo.cjs" ] && E2E_SCRIPT="$SCRIPT_DIR/e2e/click-demo.cjs"
+  [ -z "$E2E_SCRIPT" ] && [ -f "/tmp/click-demo.cjs" ] && E2E_SCRIPT="/tmp/click-demo.cjs"
+  if [ -z "$E2E_SCRIPT" ]; then
+    echo -e "  ${RED}❌ FAIL${NC} 找不到 click-demo.cjs (仓内 e2e/ 或 /tmp 都没)"
+    echo "     → Mavis 仓应有 e2e/click-demo.cjs; 老脚本位置 /tmp/click-demo.cjs"
+    FAIL=$((FAIL+1))
+  elif ! command -v node >/dev/null 2>&1; then
+    echo -e "  ${RED}❌ FAIL${NC} 没装 node, 跑不了 Playwright"
+    FAIL=$((FAIL+1))
+  elif ! NODE_PATH="/opt/homebrew/lib/node_modules:${NODE_PATH:-}" node -e "require('playwright')" 2>/dev/null; then
+    echo -e "  ${YELLOW}⏭  SKIP${NC} playwright 没装, 跳过 (npm i -g playwright 安装后可重跑)"
+    SKIP=$((SKIP+1))
+  else
+    # 真实跑一遍 (4 Tab + 等 demoRun 跑完 + 抓 page error/console error/4xx-5xx)
+    if node "$E2E_SCRIPT" 2>&1 | tee /tmp/smoke-e2e.log; then
+      echo -e "  ${GREEN}✅ PASS${NC} Playwright 4 Tab 浏览器真点无 page error"
+      PASS=$((PASS+1))
+    else
+      echo -e "  ${RED}❌ FAIL${NC} Playwright 跑出问题, 看 /tmp/smoke-e2e.log"
+      FAIL=$((FAIL+1))
+    fi
+  fi
+fi
 
 # ==================== 总结 ====================
 echo ""

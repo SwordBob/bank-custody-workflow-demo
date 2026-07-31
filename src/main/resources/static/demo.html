@@ -436,11 +436,14 @@
   async function startValuation() {
     setStatus('val-status', '⏳ 启动中...', 'running');
     try {
+      // businessKey 加时间戳 (避免 UNIQUE), fundCode 保持原始 (给后端查持仓)
+      const rawVal = $('val-bk').value;
+      const businessKey = rawVal + '-' + Date.now();
       const data = await api('POST',
-        '/processes/valuation/start?businessKey=' + encodeURIComponent($('val-bk').value + '-' + Date.now()),
+        '/processes/valuation/start?businessKey=' + encodeURIComponent(businessKey),
         {
           operator: $('val-operator').value,
-          fundCode: $('val-bk').value,
+          fundCode: rawVal,
           navDate: $('val-date').value
         }
       );
@@ -456,6 +459,7 @@
   }
 
   // ============ 完成任务 ============
+  // 返回 true=成功 false=失败, demoRun 据此判断是否跳过 (历史残留 task 失败不阻塞演示)
   async function completeTask(tab, taskId, name) {
     const operatorMap = {
       posting: $('post-operator').value,
@@ -463,9 +467,9 @@
       reconciliation: $('rec-operator').value,
       valuation: $('val-operator').value
     };
+    const statusId = TAB_PREFIX[tab] + '-status';
     try {
       await api('POST', '/tasks/' + taskId + '/complete', { operator: operatorMap[tab] });
-      const statusId = TAB_PREFIX[tab] + '-status';
       const cur = $(statusId).textContent;
       setStatus(statusId, cur + `\n✅ 已完成 UserTask: "${name}"`, 'ok');
       await refreshTasks(tab);
@@ -474,8 +478,13 @@
       if (tab === 'clearing') await loadClearingBatches();
       if (tab === 'reconciliation') await loadReconciliations();
       if (tab === 'valuation') await loadValuations();
+      return true;
     } catch (e) {
-      alert('完成失败：' + e.message);
+      // 不弹 alert 阻塞, 写到 status 让用户看, 让 demoRun 决定下一步
+      const cur = $(statusId).textContent;
+      setStatus(statusId, cur + `\n⚠️  UserTask "${name}" 失败 (跳过): ${e.message}`, 'err');
+      console.error('completeTask failed:', taskId, e);
+      return false;
     }
   }
 
@@ -549,6 +558,14 @@
 
   // ============ 一键演示：自动启动 + 循环完成所有 task ============
   async function demoRun(tab) {
+    // OpenClaw review (2026-07-31): businessKey 默认值硬编码, 同 Tab 重跑必撞 UNIQUE 冲突
+    // (Flowable ACT_RU_EXECUTION + 业务表双重). 加时间戳后缀即可一次跑通.
+    // val-bk 例外: 它是 fundCode, 给后端查持仓用, 字段长度短; 时间戳放到 startValuation 内部 businessKey 上
+    const bkEl = $(TAB_PREFIX[tab] + '-bk');
+    if (bkEl && !bkEl.value.match(/-\d{10,}$/) && tab !== 'valuation') {
+      bkEl.value += '-' + Date.now();
+    }
+
     const startMap = {
       posting: startPosting,
       clearing: startClearing,
@@ -566,13 +583,15 @@
     await startMap[tab]();
     await new Promise(r => setTimeout(r, 600));
 
-    // 循环完成 task, 直到没有为止 (最多 5 轮, 防死循环)
+    // 循环完成 task, 直到没有为止 (最多 5 轮, 防死循环 + 用 Set 跳过失败 task 避免重试)
+    const tried = new Set();
     for (let i = 0; i < 5; i++) {
       const operator = operatorMap[tab]();
       const tasks = await api('GET', '/tasks?assignee=' + encodeURIComponent(operator));
-      const mine = tasks.filter(t => t.processDefinitionKey === tab);
+      const mine = tasks.filter(t => t.processDefinitionKey === tab && !tried.has(t.taskId));
       if (mine.length === 0) break;
       for (const t of mine) {
+        tried.add(t.taskId);
         await completeTask(tab, t.taskId, t.name);
         await new Promise(r => setTimeout(r, 400));
       }
