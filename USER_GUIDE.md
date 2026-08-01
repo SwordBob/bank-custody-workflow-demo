@@ -116,6 +116,36 @@ curl -X POST "http://localhost:8080/api/custody/processes/posting/start?business
 
 **关键设计**：`startValuation` 拆分 `businessKey`（带时间戳防 UNIQUE）和 `fundCode`（原值，**给后端查持仓用**）。如果 fundCode 也拼时间戳会超过字段长度（varchar(8)）。
 
+**🎯 准确版讲解（面试照着念）**：
+
+> 估值流程是 **5 元素含起止**（不是 4 节点）——
+> `startValuation` → `FetchHoldingsDelegate` → `CalculateNavDelegate` → `userTaskConfirmValuation` → `WriteValuationDelegate` → `endValuation`。
+> 起止是事件、中间 4 个才是"实际执行节点"，但讲"5 元素"更严谨。
+
+**5 个关键变量**（贯穿全程）：
+
+| 变量 | 来源 | 用途 |
+|---|---|---|
+| `fundCode` | **启动时传** | 查询条件，FetchHoldings 查持仓 / userTask documentation 展示 |
+| `totalAsset` | FetchHoldings 设 | 持仓总市值（holdingService.sumMarketValueByFundCode） |
+| `shareCount` | FetchHoldings 设 | 基金份额（**demo 写死 5000万**，真实版查 fund_share 表） |
+| `nav` | CalculateNav 算 | NAV = totalAsset / shareCount，**4 位小数**（`HALF_UP`） |
+| `valuationId` | CalculateNav 设 | 估值记录 id（持久化主键） |
+
+**两阶段写设计**（vs 对账的一次性写）：
+
+1. `CalculateNavDelegate` 写一条 **status="PENDING"** 的估值记录（**注意**：`status` 字段值是大写 `"PENDING"`，不是 `"pending-confirm"`。CalculateNavDelegate:34 里那个 `"pending-confirm"` 是 **operator 参数的占位符**——CalculateNav 在 UserTask 之前 operator 还没设置，所以用 `"pending-confirm"` 顶一下，落到 DB 的 `operator` 字段）
+2. 风控在 userTask 点确认后，`WriteValuationDelegate` **按 businessKey 查**到这条 PENDING 记录，update `status="CONFIRMED"` + 写确认人/确认时间
+
+**对账 vs 估值 写法对比**：
+
+| 维度 | 对账 (reconciliation) | 估值 (valuation) |
+|---|---|---|
+| 流程节点 | 5 元素（含 Gateway 分支） | 5 元素（纯直线） |
+| 写业务表时机 | **终点一次性**（WriteReconciliationDelegate） | **两阶段**（PENDING + CONFIRMED） |
+| 关键变量 | `diffCount` / `diffAmount` | `nav` / `valuationId` / `fundCode` |
+| 人工节点 | 仅差异分支进 userTask | 必经 userTask（风控强校验） |
+
 ---
 
 ## 4. 一键演示 demo.html
