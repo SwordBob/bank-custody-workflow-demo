@@ -84,8 +84,11 @@
 | 框架 | Spring Boot | 3.2.5 | 跟 mongo/pg demo 对齐 |
 | 数据库 | MySQL | 8.0 / 9.0 | 本机用 9.7.0 测试通过 |
 | ORM | MyBatis-Plus | 3.5.7 | 业务表读写 |
-| JDK | OpenJDK | 17+ | 跟 mongo/pg demo 对齐 |
+| JDK | OpenJDK | 17 ~ 24 | Lombok 1.18.42, JDK 17~24 均实测编译通过 |
 | 构建 | Maven | 3.9+ | 跟 mongo/pg demo 对齐 |
+
+> **一键脚本**：`./start-demo.sh` 会自动起 MySQL + 应用 + 跑 smoke-test。
+> 本机没装 Maven 时会自动回退到 `target/` 里的预编译 jar（无需重新构建）。
 
 ## 快速开始（3 步跑通）
 

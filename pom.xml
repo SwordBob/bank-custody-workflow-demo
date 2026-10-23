@@ -23,6 +23,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <flowable.version>7.1.0</flowable.version>
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
+        <lombok.version>1.18.42</lombok.version>
     </properties>
 
     <dependencies>
@@ -60,9 +61,13 @@
         </dependency>
 
         <!-- Lombok -->
+        <!-- 显式指定版本: Spring Boot 3.2.5 父 POM 管理的是 1.18.32,
+             只支持到 JDK 21, 在 JDK 23/24 上注解处理器不生效导致编译失败。
+             1.18.42 同时兼容 JDK 17 ~ 24, 且向后兼容老版本。 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
 
