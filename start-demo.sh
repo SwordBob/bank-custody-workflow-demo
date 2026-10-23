@@ -34,11 +34,11 @@ echo -e "${BOLD}========================================${NC}"
 echo -e "${BOLD} 银行资产托管 Demo · 一键启动${NC}"
 echo -e "${BOLD}========================================${NC}"
 
-# ===== 1. 检查 Java + Maven =====
+# ===== 1. 检查 Java + 运行方式 (Maven 优先, 否则用预编译 jar) =====
 if ! command -v java >/dev/null 2>&1; then
   echo -e "${YELLOW}⚠️  Java 未安装, 尝试用 /tmp 下的 JDK 17${NC}"
   if [ ! -d "/tmp/zulu17.50.19-ca-jdk17.0.11-macosx_aarch64" ]; then
-    echo "❌ 找不到 JDK 17, 请安装 Java 17+: brew install openjdk@17"
+    echo "❌ 找不到 Java, 请安装 Java 17+: brew install openjdk@17"
     exit 1
   fi
   export JAVA_HOME="/tmp/zulu17.50.19-ca-jdk17.0.11-macosx_aarch64/zulu-17.jdk/Contents/Home"
@@ -46,15 +46,22 @@ if ! command -v java >/dev/null 2>&1; then
 fi
 echo -e "${GREEN}✅ Java: $(java -version 2>&1 | head -1)${NC}"
 
-if ! command -v mvn >/dev/null 2>&1; then
-  echo -e "${YELLOW}⚠️  Maven 未安装, 尝试用 /tmp 下的 Maven${NC}"
-  if [ ! -d "/tmp/apache-maven-3.9.16" ]; then
-    echo "❌ 找不到 Maven, 请安装: brew install maven"
-    exit 1
-  fi
+# 运行方式: 有 Maven 用 mvn spring-boot:run, 没有就用预编译 fat jar
+APP_JAR="$PROJECT_DIR/target/bank-custody-workflow-demo-1.0.0.jar"
+RUN_MODE="jar"
+if command -v mvn >/dev/null 2>&1; then
+  RUN_MODE="mvn"
+elif [ -d "/tmp/apache-maven-3.9.16" ]; then
   export PATH="/tmp/apache-maven-3.9.16/bin:$PATH"
+  RUN_MODE="mvn"
+elif [ -f "$APP_JAR" ]; then
+  echo -e "${YELLOW}⚠️  Maven 不可用, 改用预编译 jar 直接启动 (无需重新构建)${NC}"
+else
+  echo "❌ 没有 Maven, 也没有预编译 jar: $APP_JAR"
+  echo "   请安装 Maven (brew install maven) 或先执行 mvn package"
+  exit 1
 fi
-echo -e "${GREEN}✅ Maven: $(mvn -version | head -1)${NC}"
+echo -e "${GREEN}✅ 运行模式: $RUN_MODE${NC}"
 
 # ===== 2. 启动 MySQL =====
 echo ""
@@ -74,12 +81,12 @@ else
     --basedir="$MYSQL_HOME" \
     --port=3306 \
     --socket=/tmp/mysql.sock \
-    --pid-file="$MYSQL_PID" 2>&1 &
+    --pid-file="$MYSQL_PID" > "$MYSQL_DATA/mysqld.log" 2>&1 &
   sleep 5
   if kill -0 "$(cat "$MYSQL_PID" 2>/dev/null)" 2>/dev/null; then
     echo -e "${GREEN}✅ MySQL 启动 (PID $(cat "$MYSQL_PID"))${NC}"
   else
-    echo "❌ MySQL 启动失败, 查看日志"
+    echo "❌ MySQL 启动失败, 查看日志 $MYSQL_DATA/mysqld.log"
     exit 1
   fi
 fi
@@ -105,7 +112,11 @@ if lsof -nP -iTCP:$APP_PORT -sTCP:LISTEN >/dev/null 2>&1; then
   sleep 2
 fi
 
-nohup mvn org.springframework.boot:spring-boot-maven-plugin:run > "$APP_LOG" 2>&1 &
+if [ "$RUN_MODE" = "mvn" ]; then
+  nohup mvn org.springframework.boot:spring-boot-maven-plugin:run > "$APP_LOG" 2>&1 &
+else
+  nohup java -jar "$APP_JAR" > "$APP_LOG" 2>&1 &
+fi
 APP_PID=$!
 echo "  启动中 (PID $APP_PID) ..."
 

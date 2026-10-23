@@ -251,3 +251,11 @@ MIT
 ## 作者
 
 8 年 Java 后端 · 银行 IT 经验 · Flowable/Activiti 工作流实战 + MySQL 持久化
+
+## 相关链接
+
+- [[dlq-demo/DLQ-GUIDE]] — 死信队列实战（银行场景另一个核心 demo）
+- [[interview-blog/blog-flowable-csdn-friendly]] — Flowable 配套博客
+- [[interview-blog/bank-custody-workflow-demo/USER_GUIDE]] — 用户指南
+- [[求职-MOC#DLQ demo + 银行托管 demo]] — Demo 仓库索引
+- [[技术-MOC#实战 demo]] — 技术 demo 索引
